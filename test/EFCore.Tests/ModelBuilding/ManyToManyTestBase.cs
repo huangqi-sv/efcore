@@ -353,11 +353,27 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
 
                 var model = modelBuilder.FinalizeModel();
 
-                var principal = (IEntityType)model.FindEntityType(typeof(ManyToManyNavPrincipal));
-                var dependent = (IEntityType)model.FindEntityType(typeof(NavDependent));
+                var principal = model.FindEntityType(typeof(ManyToManyNavPrincipal));
+                var dependent = model.FindEntityType(typeof(NavDependent));
 
                 Assert.Equal(PropertyAccessMode.Field, principal.FindSkipNavigation("Dependents").GetPropertyAccessMode());
                 Assert.Equal(PropertyAccessMode.Property, dependent.FindSkipNavigation("ManyToManyPrincipals").GetPropertyAccessMode());
+            }
+
+            [ConditionalFact]
+            public virtual void IsRequired_throws()
+            {
+                var modelBuilder = CreateModelBuilder();
+
+                modelBuilder.Entity<ManyToManyNavPrincipal>()
+                    .HasMany(n => n.Dependents)
+                    .WithMany(n => n.ManyToManyPrincipals);
+
+                Assert.Equal(
+                    CoreStrings.RequiredSkipNavigation(nameof(ManyToManyNavPrincipal), nameof(ManyToManyNavPrincipal.Dependents)),
+                        Assert.Throws<InvalidOperationException>(() => modelBuilder.Entity<ManyToManyNavPrincipal>()
+                        .Navigation("Dependents")
+                        .IsRequired()).Message);
             }
 
             [ConditionalFact]
